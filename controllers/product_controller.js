@@ -404,56 +404,156 @@ exports.getCart = async (req, res) => {
     });
   }
 }
-exports.addToCart=async(req,res,next)=>{
-  let productID=req.body.productID;
-  let userID=req.user
- 
-      let product=await Product.findById(productID);
-     
-      let data={
-          type:"ADD_TO_CART",
-          userID:userID,
-          product:{
-              _id:product._id,
-              name:product.name,
-              price:product.price,
-              qty:req.body.qty
+exports.addToCart = async (req, res, next) => {
+  try {
+      const { productID, qty } = req.body;
+      const userID = req.user._id;
 
-          }
-          
+      if (!productID || !qty) {
+          return res.status(400).json({ error: "Product ID and quantity are required" });
       }
+
+      if (!mongoose.Types.ObjectId.isValid(productID)) {
+          return res.status(400).json({ error: "Invalid Product ID format" });
+      }
+
+      const product = await Product.findById(productID);
+      if (!product) {
+          return res.status(404).json({ error: "Product not found" });
+      }
+
+      const data = {
+          type: "ADD_TO_CART",
+          userID: userID,
+          product: {
+              _id: product._id,
+              name: product.name,
+              price: product.price,
+              qty: qty,
+          },
+      };
 
       const rpcClient = await createRpcClient();
       const result = await rpcClient.rpcCall(data);
-      res.status(200).json({result});
-    }
-  
 
-
-exports.createOrder = async (req, res) => {
- try {
-  let userId=req.user._id;
-  let data={
-    type:"Create_order",
-    userId:userId,
-
+      res.status(200).json({ result });
+  } catch (error) {
+      console.error(error);
+      next(error);
   }
-const rpcClient=await createRpcClient();
-const result=await rpcClient.rpcCall(data);
-res.status(200).json({
-  success: true,
-  msg: "Order created successfully",
-  data: result,
-});
-}
-catch (error) {
-  res.status(500).json({
-    success: false,
-    msg: "Server error",
-    error: error.message,
-  })
- }
-}
+};
+
+
+
+// exports.createOrder = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+
+//     // Step 1: Retrieve cart details for the user
+//     let cartData = {
+//       type: "GET_CART",
+//       userId: userId,
+//     };
+
+//     const rpcClient = await createRpcClient();
+//     const cartResult = await rpcClient.rpcCall(cartData);
+
+//     if (!cartResult || cartResult=== 0) {
+//       return res.status(400).json({
+//         success: false,
+//         msg: "Cart is empty. Add items to the cart before creating an order.",
+//       });
+//     }
+
+//     // Step 2: Create order based on cart items
+//     let orderData = {
+//       type: "CREATE_ORDER",
+//       userId: userId,
+//       cart: cartResult, // Include cart items in the order data
+//     };
+
+//     const orderResult = await rpcClient.rpcCall(orderData);
+
+//     // Step 3: Clear the cart after order creation (optional)
+//     let clearCartData = {
+//       type: "CLEAR_CART",
+//       userId: userId,
+//     };
+
+//     await rpcClient.rpcCall(clearCartData);
+
+//     // Respond with the order creation result
+//     res.status(200).json({
+//       success: true,
+//       msg: "Order created successfully",
+//       data: orderResult,
+//     });
+//   } catch (error) {
+//     console.error("Error creating order:", error);
+//     res.status(500).json({
+//       success: false,
+//       msg: "Server error",
+//       error: error.message,
+//     });
+//   }
+// };
+exports.createOrder = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Step 1: Retrieve cart details for the user
+    let cartData = {
+      type: "GET_CART",
+      userId: userId,
+    };
+
+    const rpcClient = await createRpcClient();
+    const cartResult = await rpcClient.rpcCall(cartData);
+
+    // Debugging: Log cartResult to check its value
+    console.log("Cart result:", cartResult);
+
+    // Check if the cart is empty or invalid
+    if (!cartResult || cartResult.length === 0) {
+      return res.status(400).json({
+        success: false,
+        msg: "Cart is empty. Add items to the cart before creating an order.",
+      });
+    }
+
+    // Step 2: Create order based on cart items
+    let orderData = {
+      type: "CREATE_ORDER",
+      userId: userId,
+      cart: cartResult, // Include cart items in the order data
+    };
+
+    const orderResult = await rpcClient.rpcCall(orderData);
+
+    // Step 3: Clear the cart after order creation (optional)
+    let clearCartData = {
+      type: "CLEAR_CART",
+      userId: userId,
+    };
+
+    await rpcClient.rpcCall(clearCartData);
+
+    // Respond with the order creation result
+    res.status(200).json({
+      success: true,
+      msg: "Order created successfully",
+      data: orderResult,
+    });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({
+      success: false,
+      msg: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 
 
 
