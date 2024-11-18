@@ -32,7 +32,8 @@ const {
   deleteCartProduct,
   deleteItem,
   getCart,
-  createOrder
+  createOrder,
+  addToCart
 } = require('../controllers/product_controller');
 router.get('/',(req,res)=>{
   res.status(200).json({Message:"This is product service"});
@@ -42,7 +43,7 @@ router.get('/',(req,res)=>{
 router.get("/getcart", auth, getCart);
 router.post("/save", auth, upload.single('image'), saveProduct);
 router.get("/getall", auth, getAllProducts);
-router.post("/addtocart", auth, addtoCart);
+router.post("/addtocart", auth, addToCart);
 router.delete("/deletecart", deleteCartProduct);
 router.delete("/deleteitem", deleteItem);
 router.put("/update", auth, updateProduct);
