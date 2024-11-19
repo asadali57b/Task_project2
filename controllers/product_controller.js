@@ -43,59 +43,6 @@ exports.saveProduct = async (req, res) => {
   }
 };
 
-// exports.getAllProducts = async (req, res) => {
-//   try {
-//     const AllProducts = await Product.find();
-
-//     if (AllProducts.length === 0) {
-//       return res.status(404).json({
-//         success: false,
-//         msg: "Product not found",
-//       });
-//     };
-//     let alluser;
-
-//     // Send all user data associated with products to the other server
-//      await Promise.all(
-//       AllProducts.map(async (element) => {
-//         const userId = element.user.toString(); // Convert ObjectId to string
-//         console.log("User ID:", userId);
-
-//         try {
-//           // Send user data to another server (modify URL as necessary)
-//           const response = await axios.post('http://localhost:3000/dashboard', { userId });
-//           alluser= response.data;
-//         } catch (error) {
-//           console.error('Error sending user data:', error.message);
-//         }
-//       })
-//     );
-//     const userId = alluser._id.toString()
-//     // Respond after sending all user data
-
-//     res.status(200).json({
-//       success: true,
-//       msg: "Products fetched successfully",
-//       data: {
-//         AllProducts: AllProducts.map((element) => ({
-//           name:userId,
-//           _id: element._id,
-//           name: element.name,
-//           price: element.price,
-//           description: element.description,
-//           image: element.image,
-//           category: element.category,
-//           brand: element.brand,
-//           stock: element.stock,
-//           user: alluser
-//         })),
-//       },
-//     });
-//   } catch (error) {
-//     res.status(500).send({ error: "Failed to fetch products" });
-//     console.log(`Error: ${error}`);
-//   }
-// };
 
 exports.getAllProducts = async (req, res) => {
   try {
@@ -251,69 +198,6 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-// exports.addtoCart = async (req, res) => {
-//   const userId = req.user._id; // Replace with userId from your authentication
-//   const { productId, quantity } = req.body;
-
-//   try {
-//     // Validate productId
-//     if (!mongoose.Types.ObjectId.isValid(productId)) {
-//       return res.status(400).json({
-//         success: false,
-//         msg: "Invalid productId format",
-//       });
-//     }
-
-//     // Fetch product price
-//     const product = await Product.findById(productId).select('price _id');
-//     if (!product) {
-//       return res.status(404).json({
-//         success: false,
-//         msg: "Product not found",
-//       });
-//     }
-//     let cartItem = await Cart.findOne({ user: userId, product: productId });
-//     if (cartItem) {
-//       cartItem.quantity += quantity;
-//       cartItem.price = product.price * cartItem.quantity;
-//     } else {
-//       // Create a new cart item
-//       cartItem = new Cart({
-//         user: userId,
-//         product: productId,
-//         quantity,
-//         price: product.price * quantity,
-//       });
-//     }
-//     // Save the cart item
-//     await cartItem.save();
-//     let data={
-//       type:"Add_to_cart",
-//       userId:userId,
-//       product:{
-//         _id:product._id,
-//         name:product.name,
-//         price:product.price,
-//         quantity:req.body.quantity
-//       }
-//     }
-//     const rpcClient = await createRpcClient();
-//     await rpcClient.rpcCall(data);
-//     res.status(200).json({
-//       success: true,
-//       msg: "Product added to cart successfully",
-//       data: data,
-//     });
-
-//   } catch (error) {
-//     console.error("Error adding product to cart:", error);
-//     res.status(500).json({
-//       success: false,
-//       msg: "Server error",
-//       error: error.message,
-//     });
-//   }
-// };
 
 exports.deleteCartProduct = async (req, res) => {
   const { cartId } = req.body;
@@ -327,8 +211,7 @@ exports.deleteCartProduct = async (req, res) => {
       });
     }
 
-    // Delete the cart by its ID
-    const deletedCart = await Cart.findByIdAndDelete(cartId);
+    const deletedCart = await Product.findByIdAndDelete(cartId);
 
     if (!deletedCart) {
       return res.status(404).json({
@@ -338,7 +221,6 @@ exports.deleteCartProduct = async (req, res) => {
     }
 
 
-    // Send the response with a success message
     res.status(200).json({
       success: true,
       msg: "Cart deleted successfully",
@@ -445,63 +327,12 @@ exports.addToCart = async (req, res, next) => {
 
 
 
-// exports.createOrder = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-
-//     // Step 1: Retrieve cart details for the user
-//     let cartData = {
-//       type: "GET_CART",
-//       userId: userId,
-//     };
-
-//     const rpcClient = await createRpcClient();
-//     const cartResult = await rpcClient.rpcCall(cartData);
-
-//     if (!cartResult || cartResult=== 0) {
-//       return res.status(400).json({
-//         success: false,
-//         msg: "Cart is empty. Add items to the cart before creating an order.",
-//       });
-//     }
-
-//     // Step 2: Create order based on cart items
-//     let orderData = {
-//       type: "CREATE_ORDER",
-//       userId: userId,
-//       cart: cartResult, // Include cart items in the order data
-//     };
-
-//     const orderResult = await rpcClient.rpcCall(orderData);
-
-//     // Step 3: Clear the cart after order creation (optional)
-//     let clearCartData = {
-//       type: "CLEAR_CART",
-//       userId: userId,
-//     };
-
-//     await rpcClient.rpcCall(clearCartData);
-
-//     // Respond with the order creation result
-//     res.status(200).json({
-//       success: true,
-//       msg: "Order created successfully",
-//       data: orderResult,
-//     });
-//   } catch (error) {
-//     console.error("Error creating order:", error);
-//     res.status(500).json({
-//       success: false,
-//       msg: "Server error",
-//       error: error.message,
-//     });
-//   }
-// };
 exports.createOrder = async (req, res) => {
   try {
     const userId = req.user._id;
+   
 
-    // Step 1: Retrieve cart details for the user
+    
     let cartData = {
       type: "GET_CART",
       userId: userId,
@@ -510,10 +341,12 @@ exports.createOrder = async (req, res) => {
     const rpcClient = await createRpcClient();
     const cartResult = await rpcClient.rpcCall(cartData);
 
-    // Debugging: Log cartResult to check its value
+    console.log(rpcClient);
+
+    
     console.log("Cart result:", cartResult);
 
-    // Check if the cart is empty or invalid
+    
     if (!cartResult || cartResult.length === 0) {
       return res.status(400).json({
         success: false,
@@ -521,16 +354,15 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // Step 2: Create order based on cart items
     let orderData = {
       type: "CREATE_ORDER",
       userId: userId,
-      cart: cartResult, // Include cart items in the order data
+      cart: cartResult, 
     };
 
     const orderResult = await rpcClient.rpcCall(orderData);
 
-    // Step 3: Clear the cart after order creation (optional)
+    
     let clearCartData = {
       type: "CLEAR_CART",
       userId: userId,
@@ -538,7 +370,6 @@ exports.createOrder = async (req, res) => {
 
     await rpcClient.rpcCall(clearCartData);
 
-    // Respond with the order creation result
     res.status(200).json({
       success: true,
       msg: "Order created successfully",
